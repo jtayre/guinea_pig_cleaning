@@ -48,7 +48,6 @@ function getCellColor(cellId, dateStr) {
   }
 }
 
-// Create grid and attach events
 function createGrid() {
   grid.innerHTML = "";
   for (let r = 0; r < rows; r++) {
@@ -61,7 +60,7 @@ function createGrid() {
       label.innerText = dates[div.id] || "Set Date";
       div.appendChild(label);
 
-      // Apply background color
+      // Apply correct background color
       div.style.backgroundColor = getCellColor(div.id, dates[div.id]);
 
       div.addEventListener("click", () => {
@@ -125,5 +124,6 @@ document.getElementById("export").addEventListener("click", () => {
 
 </body>
 </html>
+
 
 
