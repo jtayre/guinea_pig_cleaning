@@ -32,7 +32,7 @@ let dates = {};
 // Parse YYYY-MM-DD safely
 function parseDateYMD(dateStr) {
   const parts = dateStr.split("-");
-  return new Date(parts[0], parts[1]-1, parts[2]);
+  return new Date(parts[0], parts[1]-1, parts[2]); // year, monthIndex, day
 }
 
 // Determine cell color based on age and rules
@@ -121,21 +121,27 @@ document.getElementById("loadFile").addEventListener("change", (event) => {
   reader.readAsText(file);
 });
 
-// Export JSON with default filename
+// Export JSON with filename prompt
 document.getElementById("export").addEventListener("click", () => {
+  const fileName = prompt("Enter filename for export:", "dates.json");
+  if (!fileName) return; // cancel if user clicks "Cancel"
+
   const blob = new Blob([JSON.stringify(dates, null, 2)], {type: "application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "dates.json"; // default filename
+  a.download = fileName; // use user-provided name
   a.click();
   URL.revokeObjectURL(url);
-  alert("JSON exported! Save it to your shared OneDrive folder for syncing.");
+
+  alert(`JSON exported as "${fileName}". Save it to your shared OneDrive folder for syncing.`);
 });
 </script>
 
 </body>
 </html>
+
+
 
 
 
