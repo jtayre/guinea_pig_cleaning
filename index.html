@@ -29,12 +29,19 @@ const cols = 2;
 const grid = document.getElementById("grid");
 let dates = {};
 
+// Parse YYYY-MM-DD safely
+function parseDateYMD(dateStr) {
+  const parts = dateStr.split("-");
+  return new Date(parts[0], parts[1]-1, parts[2]);
+}
+
 // Determine cell color based on age and rules
 function getCellColor(cellId, dateStr) {
   if (!dateStr) return "#eee"; // no date
-  const date = new Date(dateStr);
+  const date = parseDateYMD(dateStr);
   const today = new Date();
-  const diffDays = Math.floor((today - date)/(1000*60*60*24));
+  const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.floor((todayNormalized - date) / (1000*60*60*24));
   const index = parseInt(cellId.split(",")[0])*2 + parseInt(cellId.split(",")[1]);
 
   if (index < 10) { // top 5x2
@@ -48,6 +55,7 @@ function getCellColor(cellId, dateStr) {
   }
 }
 
+// Create grid and attach events
 function createGrid() {
   grid.innerHTML = "";
   for (let r = 0; r < rows; r++) {
@@ -64,6 +72,9 @@ function createGrid() {
       div.style.backgroundColor = getCellColor(div.id, dates[div.id]);
 
       div.addEventListener("click", () => {
+        // Prevent multiple inputs in same cell
+        if (div.querySelector("input[type='date']")) return;
+
         const input = document.createElement("input");
         input.type = "date";
         input.value = dates[div.id] || "";
@@ -74,6 +85,7 @@ function createGrid() {
           div.removeChild(input);
           localStorage.setItem("lastDates", JSON.stringify(dates));
         });
+
         div.appendChild(input);
         input.focus();
       });
@@ -83,7 +95,7 @@ function createGrid() {
   }
 }
 
-// Load last JSON from localStorage
+// Load last JSON from localStorage on page load
 window.addEventListener("load", () => {
   const saved = localStorage.getItem("lastDates");
   if (saved) {
@@ -124,6 +136,7 @@ document.getElementById("export").addEventListener("click", () => {
 
 </body>
 </html>
+
 
 
 
