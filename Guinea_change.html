@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>6x2 Date Grid</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { font-family: sans-serif; padding: 20px; text-align: center; }
+  h2 { margin-bottom: 10px; }
+  .buttons { margin-bottom: 15px; }
+  button { margin: 0 5px 10px 5px; padding: 10px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 140px); grid-gap: 10px; justify-content: center; }
+  .cell { width: 140px; height: 60px; background: #eee; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; cursor: pointer; flex-direction: column; font-size: 14px; }
+  input[type="date"] { width: 120px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<h2>6x2 Date Grid</h2>
+<div class="buttons">
+  <input type="file" id="loadFile" accept=".json">
+  <button id="export">Export JSON</button>
+</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const rows = 6;
+const cols = 2;
+const grid = document.getElementById("grid");
+
+// Load saved dates from localStorage if available
+let dates = JSON.parse(localStorage.getItem("dates")) || {};
+
+// Function to create the grid
+function createGrid() {
+  grid.innerHTML = ""; // Clear existing grid
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const div = document.createElement("div");
+      div.className = "cell";
+      div.id = `${r},${c}`;
+
+      const label = document.createElement("span");
+      label.innerText = dates[div.id] || "Set Date";
+      div.appendChild(label);
+
+      div.addEventListener("click", () => {
+        const input = document.createElement("input");
+        input.type = "date";
+        input.value = dates[div.id] || "";
+        input.addEventListener("change", () => {
+          dates[div.id] = input.value;
+          label.innerText = input.value || "Set Date";
+          localStorage.setItem("dates", JSON.stringify(dates));
+          div.removeChild(input);
+        });
+        div.appendChild(input);
+        input.focus();
+      });
+
+      grid.appendChild(div);
+    }
+  }
+}
+
+// Initial grid creation
+createGrid();
+
+// Load JSON from file
+document.getElementById("loadFile").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      dates = JSON.parse(evt.target.result);
+      localStorage.setItem("dates", JSON.stringify(dates));
+      createGrid();
+      alert("JSON loaded successfully!");
+    } catch (err) {
+      alert("Invalid JSON file.");
+    }
+  };
+  reader.readAsText(file);
+});
+
+// Export JSON to file
+document.getElementById("export").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(dates, null, 2)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "dates.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  alert("JSON exported! Save it to your OneDrive folder for syncing.");
+});
+</script>
+
+</body>
+</html>
