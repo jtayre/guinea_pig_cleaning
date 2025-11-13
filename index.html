@@ -8,9 +8,52 @@
   body { font-family: sans-serif; padding: 20px; text-align: center; }
   h2 { margin-bottom: 10px; }
   .buttons { margin-bottom: 15px; }
-  button, input[type="file"] { margin: 0 5px 10px 5px; padding: 10px 15px; font-size: 16px; cursor: pointer; }
-  .grid { display: grid; grid-template-columns: repeat(2, 140px); grid-gap: 10px; justify-content: center; }
-  .cell { width: 140px; height: 60px; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc; cursor: pointer; flex-direction: column; font-size: 14px; color: white; }
+  button, input[type="file"] {
+    margin: 0 5px 10px 5px;
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  /* Top 4x2 grid (unchanged sizing) */
+  .grid-top {
+    display: grid;
+    grid-template-columns: repeat(2, 140px);
+    grid-auto-rows: 60px;
+    grid-gap: 10px;
+    justify-content: center;
+  }
+
+  /* Bottom row of 3 portrait boxes */
+  .bottom-row {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    flex-direction: column;
+    font-size: 14px;
+    color: white;
+    box-sizing: border-box;
+  }
+
+  .cell.horizontal {
+    width: 140px;
+    height: 60px;   /* landscape */
+  }
+
+  .cell.vertical {
+    width: 140px;
+    height: 180px;  /* portrait */
+  }
+
   input[type="date"] { width: 120px; font-size: 14px; }
 </style>
 </head>
@@ -21,77 +64,108 @@
   <input type="file" id="loadFile" accept=".json">
   <button id="export">Export</button>
 </div>
-<div class="grid" id="grid"></div>
+
+<!-- Top 4x2 grid -->
+<div class="grid-top" id="gridTop"></div>
+
+<!-- Bottom row of 3 portrait boxes -->
+<div class="bottom-row" id="bottomRow"></div>
 
 <script>
-const rows = 6;
-const cols = 2;
-const grid = document.getElementById("grid");
+// Configuration
+const TOP_ROWS = 4;
+const TOP_COLS = 2;
+const BOTTOM_COUNT = 3;
+
+const topGrid  = document.getElementById("gridTop");
+const bottomRow = document.getElementById("bottomRow");
 let dates = {};
 
 // Parse YYYY-MM-DD safely
 function parseDateYMD(dateStr) {
   const parts = dateStr.split("-");
-  return new Date(parts[0], parts[1]-1, parts[2]); // year, monthIndex, day
+  return new Date(parts[0], parts[1] - 1, parts[2]); // year, monthIndex, day
 }
 
 // Determine cell color based on age and rules
+// Top grid: same rules as original top cells
+// Bottom row: same rules as original bottom two cells
 function getCellColor(cellId, dateStr) {
   if (!dateStr) return "#eee"; // no date
   const date = parseDateYMD(dateStr);
   const today = new Date();
   const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const diffDays = Math.floor((todayNormalized - date) / (1000*60*60*24));
-  const index = parseInt(cellId.split(",")[0])*2 + parseInt(cellId.split(",")[1]);
+  const diffDays = Math.floor((todayNormalized - date) / (1000 * 60 * 60 * 24));
 
-  if (index < 10) { // top 5x2
+  const isBottom = cellId.startsWith("bottom-");
+
+  if (!isBottom) {
+    // Top 4x2 (original "top" rules)
     if (diffDays >= 7) return "red";
     if (diffDays >= 4) return "orange";
     return "green";
-  } else { // bottom 1x2
+  } else {
+    // Bottom 3 portrait boxes (original "bottom 2" rules)
     if (diffDays >= 4) return "red";
     if (diffDays >= 2) return "orange";
     return "green";
   }
 }
 
-// Create grid and attach events
-function createGrid() {
-  grid.innerHTML = "";
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const div = document.createElement("div");
-      div.className = "cell";
-      div.id = `${r},${c}`;
+// Create a single cell and hook up events
+function createCell(id, orientation) {
+  const div = document.createElement("div");
+  div.className = `cell ${orientation}`;
+  div.id = id;
 
-      const label = document.createElement("span");
-      label.innerText = dates[div.id] || "Set Date";
-      div.appendChild(label);
+  const label = document.createElement("span");
+  label.innerText = dates[id] || "Set Date";
+  div.appendChild(label);
 
-      // Apply correct background color
-      div.style.backgroundColor = getCellColor(div.id, dates[div.id]);
+  // Apply correct background color
+  div.style.backgroundColor = getCellColor(id, dates[id]);
 
-      div.addEventListener("click", () => {
-        // Prevent multiple inputs in same cell
-        if (div.querySelector("input[type='date']")) return;
+  div.addEventListener("click", () => {
+    // Prevent multiple inputs in same cell
+    if (div.querySelector("input[type='date']")) return;
 
-        const input = document.createElement("input");
-        input.type = "date";
-        input.value = dates[div.id] || "";
-        input.addEventListener("change", () => {
-          dates[div.id] = input.value;
-          label.innerText = input.value || "Set Date";
-          div.style.backgroundColor = getCellColor(div.id, input.value);
-          div.removeChild(input);
-          localStorage.setItem("lastDates", JSON.stringify(dates));
-        });
+    const input = document.createElement("input");
+    input.type = "date";
+    input.value = dates[id] || "";
+    input.addEventListener("change", () => {
+      dates[id] = input.value;
+      label.innerText = input.value || "Set Date";
+      div.style.backgroundColor = getCellColor(id, input.value);
+      div.removeChild(input);
+      localStorage.setItem("lastDates", JSON.stringify(dates));
+    });
 
-        div.appendChild(input);
-        input.focus();
-      });
+    div.appendChild(input);
+    input.focus();
+  });
 
-      grid.appendChild(div);
+  return div;
+}
+
+// Create grid and bottom row
+function createLayout() {
+  topGrid.innerHTML = "";
+  bottomRow.innerHTML = "";
+
+  // Top 4x2
+  for (let r = 0; r < TOP_ROWS; r++) {
+    for (let c = 0; c < TOP_COLS; c++) {
+      const id = `top-${r},${c}`;
+      const cell = createCell(id, "horizontal");
+      topGrid.appendChild(cell);
     }
+  }
+
+  // Bottom row of 3 portrait boxes
+  for (let i = 0; i < BOTTOM_COUNT; i++) {
+    const id = `bottom-${i}`;
+    const cell = createCell(id, "vertical");
+    bottomRow.appendChild(cell);
   }
 }
 
@@ -101,7 +175,7 @@ window.addEventListener("load", () => {
   if (saved) {
     dates = JSON.parse(saved);
   }
-  createGrid();
+  createLayout();
 });
 
 // Manual import from OneDrive
@@ -112,9 +186,9 @@ document.getElementById("loadFile").addEventListener("change", (event) => {
   reader.onload = e => {
     try {
       dates = JSON.parse(e.target.result);
-      createGrid();
+      createLayout();
       localStorage.setItem("lastDates", JSON.stringify(dates));
-    } catch(err) {
+    } catch (err) {
       alert("Invalid JSON file");
     }
   };
@@ -126,7 +200,7 @@ document.getElementById("export").addEventListener("click", () => {
   const fileName = prompt("Enter filename for export:", "dates.json");
   if (!fileName) return; // cancel if user clicks "Cancel"
 
-  const blob = new Blob([JSON.stringify(dates, null, 2)], {type: "application/json"});
+  const blob = new Blob([JSON.stringify(dates, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -140,6 +214,7 @@ document.getElementById("export").addEventListener("click", () => {
 
 </body>
 </html>
+
 
 
 
